@@ -29,7 +29,7 @@ export default {
                         console.log(event)
                     }
                     this.gemSocketBTC.onmessage = (event) => {
-                        listener.next(event)
+                        listener.next(JSON.parse(event.data))
                     }
                 },
                 stop: () => {
@@ -50,8 +50,25 @@ export default {
                 }
             },
             initListener: {
-                next: (v) => {
-
+                next: (value) => {
+                    value.forEach(v => {
+                        var x = {
+                            bid: "",
+                            ask: "",
+                            remaining: v.remaining
+                        }
+                        if (v.side === "bid") {
+                            x.bid = v.price
+                            this.bidIndex.unshift(parseFloat(v.price))
+                            this.bidData.unshift(x)
+                        } else {
+                            x.ask = v.price
+                            this.askIndex.push(parseFloat(v.price))
+                            this.askData.push(x)
+                        }
+                    })
+                        console.log(this.bidData)
+                        console.log(this.askData)
                 },
                 complete: () => {
                     console.log('Order book initialization complete.')
@@ -70,14 +87,16 @@ export default {
     computed: {
         parsed$() {
             return xs.createWithMemory(this.producerBTC)
-                    .map(event => {
-                        let x = JSON.parse(event.data)
-                        console.log(x)
-                        return x
+                    .map(v => {
+                        console.log(v)
+                        return v
                     })
         },
         init$() {
-            return xs.from(this.parsed$).take(1)
+            return xs.from(this.parsed$)
+                .filter(v => v.type === "update")
+                .map(v => v.events)
+                .take(1)
         },
         change$() {
             return xs.from(this.parsed$).drop(1)
@@ -92,16 +111,6 @@ export default {
             this.parsed$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
-
-            // change$.addListener(this.changeListener)
-
-
-            // listen for messages and update order book
-            // this.gemSocketBTC.onmessage = (event) => {
-            //     var msg = JSON.parse(event.data)
-            //     console.log(msg)
-            //     var hi = msg.events[msg.events.length - 1].price
-            //     var lo = msg.events[0].price
 
 
 
