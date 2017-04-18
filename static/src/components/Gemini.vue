@@ -1,17 +1,25 @@
 <template>
-    <div>
-        <h1>This is Gemini Vue</h1>
-        <el-button :plain="true" type="success" :disabled="connected" @click="connect">Connect</el-button>
-        <el-button :plain="true" type="danger" :disabled="!connected" @click="disconnect">Disconnect</el-button>
+    <div class="container">
+        <h4>This is Gemini Vue</h4>
+        <el-button :plain="true" type="success" size="small" :disabled="connected" @click="connect">Connect</el-button>
+        <el-button :plain="true" type="danger" size="small" :disabled="!connected" @click="disconnect">Disconnect</el-button>
+        <br>
+        <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
+        <br>
+        <market-ladder :ladderData="ladderData"></market-ladder>
+        <br>
     </div>
 </template>
 
 <script>
+import MarketLadder from './MarketLadder.vue'
 import xs from 'xstream'
+import _ from 'lodash'
 
 export default {
     data() {
         return {
+            marketDepth: 10,
             bidIndex: [],
             bidData: [],
             askIndex: [],
@@ -53,22 +61,20 @@ export default {
                 next: (value) => {
                     value.forEach(v => {
                         var x = {
-                            bid: "",
-                            ask: "",
-                            remaining: v.remaining
+                            bidSize: "",
+                            askSize: "",
+                            price: v.price
                         }
                         if (v.side === "bid") {
-                            x.bid = v.price
-                            this.bidIndex.unshift(parseFloat(v.price))
+                            x.bidSize = v.remaining
+                            this.bidIndex.unshift(parseFloat(x.price))
                             this.bidData.unshift(x)
                         } else {
-                            x.ask = v.price
-                            this.askIndex.push(parseFloat(v.price))
-                            this.askData.push(x)
+                            x.askSize = v.remaining
+                            this.askIndex.unshift(parseFloat(x.price))
+                            this.askData.unshift(x)
                         }
                     })
-                        console.log(this.bidData)
-                        console.log(this.askData)
                 },
                 complete: () => {
                     console.log('Order book initialization complete.')
@@ -100,6 +106,12 @@ export default {
         },
         change$() {
             return xs.from(this.parsed$).drop(1)
+        },
+        ladderData() {
+            return _.chain(this.askData)
+                        .drop(this.askData.length - this.marketDepth)
+                        .concat(_.dropRight(this.bidData, this.bidData.length - this.marketDepth))
+                        .value()
         }
         
     },
@@ -111,25 +123,6 @@ export default {
             this.parsed$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
-
-
-
-                // if (msg.type === "update" && msg.events.length > 1) {
-                //     msg.events.forEach((v) => {
-                //         let x = {
-                //             price: v.price,
-                //             remaining: v.remaining
-                //         }
-                //         if (v.side === "bid") {
-                //             this.bidIndex.unshift(parseInt(x.price))
-                //             this.bidData.unshift(x)
-                //         } else {
-                //             this.askIndex.push(parseInt(x.price))
-                //             this.askData.push(x)
-                //         }
-                //     })
-                // } else {}
-            // }
         },
         connectETH() {
 
@@ -145,6 +138,20 @@ export default {
         disconnectETH() {
 
         }
+    },
+    components: {
+        MarketLadder
     }
 }
 </script>
+
+<style>
+    .container {
+        width: 500px;
+    }
+
+    .input {
+        margin: 0px 0px 0px 0px;
+        padding: 0px 0px 0px 0px;
+    }
+</style>
