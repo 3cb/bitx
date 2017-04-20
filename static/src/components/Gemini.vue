@@ -9,7 +9,7 @@
         <div class="ml">
             <market-ladder :ladderData="ladderData"></market-ladder>
         </div>
-        <time-sales :tradeData="tradeData" class="ts"></time-sales>
+        <time-sales :tradeData="resizedTradeData" class="ts"></time-sales>
         <br>
     </div>
 </template>
@@ -140,6 +140,7 @@ export default {
                         price: value.price,
                         tid: value.tid
                     }
+                    
                     this.tradeData.unshift(x)
                     console.log(this.tradeData)
 
@@ -190,6 +191,9 @@ export default {
             var i = _.findLastIndex(this.orderBook, { "bidSize": "" })
             var j = _.findIndex(this.orderBook, { "askSize": "" })
             return _.slice(this.orderBook, j-this.marketDepth, i+this.marketDepth+1)
+        },
+        resizedTradeData() {
+            return this.tradeData < 2*this.marketData ? this.tradeData: _.dropRight(this.tradeData, this.tradeData.length - 2*this.marketDepth)
         }
     },
     methods: {
