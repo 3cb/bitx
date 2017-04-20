@@ -6,13 +6,17 @@
         <br>
         <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
         <br>
-        <market-ladder :ladderData="ladderData"></market-ladder>
+        <div class="ml">
+            <market-ladder :ladderData="ladderData"></market-ladder>
+        </div>
+        <time-sales :tradeData="tradeData" class="ts"></time-sales>
         <br>
     </div>
 </template>
 
 <script>
 import MarketLadder from './MarketLadder.vue'
+import TimeSales from './TimeSales.vue'
 import xs from 'xstream'
 import _ from 'lodash'
 
@@ -21,6 +25,7 @@ export default {
         return {
             marketDepth: 7,
             orderBook: [],
+            tradeData: [],
             connected: false,
             geminiAddrBTC: 'wss://api.gemini.com/v1/marketdata/btcusd',
             geminiAddrETH: 'wss://api.gemini.com/v1/marketdata/ethusd',
@@ -125,7 +130,23 @@ export default {
                     }
                 },
                 complete: () => {
-                    console.log('Price update stream complete.')
+                    console.log('Order Book stream complete.')
+                }
+            },
+            tradeListener: {
+                next: (value) => {
+                    var x = {
+                        amount: value.amount,
+                        price: value.price,
+                        tid: value.tid
+                    }
+                    this.tradeData.unshift(x)
+                    console.log(this.tradeData)
+
+
+                },
+                complete: () => {
+                    console.log("Time and Sales stream complete.")
                 }
             }
         }
@@ -140,11 +161,24 @@ export default {
                 .filter(v => v.events.length > 1 && v.type === "update")
                 .map(v => v.events)
         },
+        trade$() {
+            return xs.from(this.main$)
+                .drop(1)
+                .filter(v => v.type === "update")
+                .filter(v => v.events.length === 2)
+                .map(v => {
+                    console.log("trade$")
+                    console.log(v)
+                    return v.events[1]
+                })
+        },
         change$() {
             return xs.from(this.main$)
                 .drop(1)
                 .filter(v => v.type === "update")
                 .map(v => {
+                    console.log("change$")
+                    console.log(v)
                     if (v.events.length === 2) {
                         _.reverse(v.events)
                     }
@@ -166,6 +200,7 @@ export default {
             this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
+            this.trade$.addListener(this.tradeListener)
         },
         connectETH() {
 
@@ -177,24 +212,37 @@ export default {
             this.main$.removeListener(this.controlListener)
             this.init$.removeListener(this.initListener)
             this.change$.removeListener(this.changeListener)
+            this.trade$.removeListener(this.tradeListener)
         },
         disconnectETH() {
 
         }
     },
     components: {
-        MarketLadder
+        MarketLadder,
+        TimeSales
     }
 }
 </script>
 
 <style>
     .container {
-        width: 500px;
+        margin: auto;
+        width: 910px;
+        align: center;
     }
 
     .input {
         margin: 0px 0px 0px 0px;
         padding: 0px 0px 0px 0px;
+    }
+
+    .ml {
+        float: left;
+        width: 540px;
+    }
+
+    .ts {
+        float: right;
     }
 </style>

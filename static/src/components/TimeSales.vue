@@ -1,28 +1,21 @@
 <template>
-    <div>
+    <div class="ts">
         <el-table
-            :data="ladderData"
-            maxHeight="600"
-            border>
-            <el-table-column
-                prop="bidSize"
-                label="Bid Size"
-                width="184"
-                header-align="center"
-                align="right">
-            </el-table-column>
+            :data="tradeData"
+            maxHeight="600">
             <el-table-column
                 prop="price"
                 label="Price"
-                width="171"
+                width="184"
+                align="center"
                 header-align="center">
             </el-table-column>
             <el-table-column
-                prop="askSize"
-                label="Ask Size"
+                prop="amount"
+                label="Size"
                 width="184"
-                header-align="center"
-                align="left">
+                align="center"
+                header-align="center">
             </el-table-column>
         </el-table>
     </div>
@@ -30,10 +23,10 @@
 
 <script>
 export default {
-    props: ['ladderData']
+    props: ['tradeData']
 }
 </script>
-  
+
 <style>
   .clearfix:before,
   .clearfix:after {
@@ -42,5 +35,8 @@ export default {
   }
   .clearfix:after {
       clear: both
+  }
+  .ts {
+      width: 370px;
   }
 </style>
