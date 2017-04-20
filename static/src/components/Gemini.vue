@@ -19,11 +19,8 @@ import _ from 'lodash'
 export default {
     data() {
         return {
-            marketDepth: 10,
-            bidIndex: [],
-            bidData: [],
-            askIndex: [],
-            askData: [],
+            marketDepth: 7,
+            orderBook: [],
             connected: false,
             geminiAddrBTC: 'wss://api.gemini.com/v1/marketdata/btcusd',
             geminiAddrETH: 'wss://api.gemini.com/v1/marketdata/ethusd',
@@ -59,6 +56,7 @@ export default {
             },
             initListener: {
                 next: (value) => {
+                    this.orderBook = []
                     value.forEach(v => {
                         var x = {
                             bidSize: "",
@@ -67,22 +65,54 @@ export default {
                         }
                         if (v.side === "bid") {
                             x.bidSize = v.remaining
-                            this.bidIndex.unshift(parseFloat(x.price))
-                            this.bidData.unshift(x)
+                            this.orderBook.unshift(x)
                         } else {
                             x.askSize = v.remaining
-                            this.askIndex.unshift(parseFloat(x.price))
-                            this.askData.unshift(x)
+                            this.orderBook.unshift(x)
                         }
                     })
+                    this.orderBook = _.orderBy(this.orderBook, [(o) => parseFloat(o.price)], ["desc"])
                 },
                 complete: () => {
                     console.log('Order book initialization complete.')
                 }
             },
             changeListener: {
-                next: (v) => {
+                next: (value) => {
+                    var i = _.findIndex(this.orderBook, (o) => o.price === value[0].price)
 
+                    switch (i >= 0) {
+                        case true:
+                            if (value[0].side === "bid") {
+                                this.orderBook[i].askSize = ""
+                                value[0].remaining === "0" ? _.pullAt(this.orderBook, i) : this.orderBook[i].bidSize = value[0].remaining
+                            } else if (value[0].side === "ask") {
+                                this.orderBook[i].bidSize = ""
+                                value[0].remaining === "0" ? _.pullAt(this.orderBook, i) : this.orderBook[i].askSize = value[0].remaining
+                            }
+                            break
+                        case false:
+                            if (value[0].side === "bid") {
+                                this.orderBook = _.chain(this.orderBook)
+                                                    .concat({
+                                                        bidSize: value[0].remaining,
+                                                        askSize: "",
+                                                        price: value[0].price
+                                                    })
+                                                    .orderBy([(o) => parseFloat(o.price)], ["desc"])
+                                                    .value()
+                            } else if (value[0].side === "ask") {
+                                this.orderBook = _.chain(this.orderBook)
+                                                    .concat({
+                                                        bidSize: "",
+                                                        askSize: value[0].remaining,
+                                                        price: value[0].price
+                                                    })
+                                                    .orderBy([(o) => parseFloat(o.price)], ["desc"])
+                                                    .value()
+                            }
+                            break
+                    }
                 },
                 complete: () => {
                     console.log('Price update stream complete.')
@@ -91,36 +121,39 @@ export default {
         }
     },
     computed: {
-        parsed$() {
+        main$() {
             return xs.createWithMemory(this.producerBTC)
-                    .map(v => {
-                        console.log(v)
-                        return v
-                    })
         },
         init$() {
-            return xs.from(this.parsed$)
-                .filter(v => v.type === "update")
-                .map(v => v.events)
+            return xs.from(this.main$)
                 .take(1)
+                .filter(v => v.events.length > 1 && v.type === "update")
+                .map(v => v.events)
         },
         change$() {
-            return xs.from(this.parsed$).drop(1)
+            return xs.from(this.main$)
+                .drop(1)
+                .filter(v => v.type === "update")
+                .map(v => {
+                    if (v.events.length === 2) {
+                        _.reverse(v.events)
+                    }
+                    return v
+                })
+                .map(v => v.events)
         },
         ladderData() {
-            return _.chain(this.askData)
-                        .drop(this.askData.length - this.marketDepth)
-                        .concat(_.dropRight(this.bidData, this.bidData.length - this.marketDepth))
-                        .value()
+            var i = _.findLastIndex(this.orderBook, { "bidSize": "" })
+            var j = _.findIndex(this.orderBook, { "askSize": "" })
+            return _.slice(this.orderBook, j-this.marketDepth, i+this.marketDepth+1)
         }
-        
     },
     methods: {
         connect() {
             this.connectBTC()
         },
         connectBTC() {
-            this.parsed$.addListener(this.controlListener)
+            this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
         },
@@ -131,7 +164,7 @@ export default {
             this.disconnectBTC()
         },
         disconnectBTC() {
-            this.parsed$.removeListener(this.controlListener)
+            this.main$.removeListener(this.controlListener)
             this.init$.removeListener(this.initListener)
             this.change$.removeListener(this.changeListener)
         },
