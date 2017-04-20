@@ -31,6 +31,11 @@ export default {
                     this.gemSocketBTC = new WebSocket(this.geminiAddrBTC)
                     this.gemSocketBTC.onopen = (event) => {
                         this.connected = true
+                        this.$notify({
+                            title: "Connected",
+                            message: "Streaming data from Gemini Exchange",
+                            type: "success"
+                        })
                         console.log(event)
                     }
                     this.gemSocketBTC.onmessage = (event) => {
@@ -41,6 +46,11 @@ export default {
                     this.gemSocketBTC.close()
                     this.gemSocketBTC.onclose = (event) => {
                         this.connected = false
+                        this.$notify({
+                            title: "Disconnected",
+                            message: "Live data from Gemini Exchange stopped",
+                            type: "error"
+                        })
                         console.log(event)
                     }
                 }
