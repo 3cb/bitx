@@ -71,7 +71,6 @@ export default {
             },
             initListener: {
                 next: (value) => {
-                    this.orderBook = []
                     value.forEach(v => {
                         var x = {
                             bidSize: "",
@@ -193,6 +192,7 @@ export default {
             this.connectBTC()
         },
         connectBTC() {
+            this.orderBook = []
             this.tradeData = []
             this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
