@@ -140,11 +140,7 @@ export default {
                         price: value.price,
                         tid: value.tid
                     }
-                    
                     this.tradeData.unshift(x)
-                    console.log(this.tradeData)
-
-
                 },
                 complete: () => {
                     console.log("Time and Sales stream complete.")
@@ -162,30 +158,26 @@ export default {
                 .filter(v => v.events.length > 1 && v.type === "update")
                 .map(v => v.events)
         },
+        change$() {
+            return xs.from(this.main$)
+                .drop(1)
+                .filter(v => v.type === "update")
+                .map(v => {
+                    if (v.events.length === 2) {
+                        _.reverse(_.cloneDeep(v.events))
+                    }
+                    return v
+                })
+                .map(v => v.events)
+        },
         trade$() {
             return xs.from(this.main$)
                 .drop(1)
                 .filter(v => v.type === "update")
                 .filter(v => v.events.length === 2)
                 .map(v => {
-                    console.log("trade$")
-                    console.log(v)
-                    return v.events[1]
+                    return v.events[0]
                 })
-        },
-        change$() {
-            return xs.from(this.main$)
-                .drop(1)
-                .filter(v => v.type === "update")
-                .map(v => {
-                    console.log("change$")
-                    console.log(v)
-                    if (v.events.length === 2) {
-                        _.reverse(v.events)
-                    }
-                    return v
-                })
-                .map(v => v.events)
         },
         ladderData() {
             var i = _.findLastIndex(this.orderBook, { "bidSize": "" })
@@ -201,6 +193,7 @@ export default {
             this.connectBTC()
         },
         connectBTC() {
+            this.tradeData = []
             this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
