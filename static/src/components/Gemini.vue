@@ -22,7 +22,6 @@
 <script>
 import MarketLadder from './MarketLadder.vue'
 import TimeSales from './TimeSales.vue'
-import { createProducer } from '../lib/funcs.js'
 import xs from 'xstream'
 import _ from 'lodash'
 
