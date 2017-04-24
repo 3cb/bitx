@@ -3,6 +3,11 @@
         <h4>This is Gemini Vue</h4>
         <el-button :plain="true" type="success" size="small" :disabled="connected" @click="connect">Connect</el-button>
         <el-button :plain="true" type="danger" size="small" :disabled="!connected" @click="disconnect">Disconnect</el-button>
+        <el-radio-group v-model="radioControl" @change="switchSocket">
+            <el-radio label="btcusd">BTC/USD</el-radio>
+            <el-radio label="ethusd">ETH/USD</el-radio>
+            <el-radio label="ethbtc">ETH/BTC</el-radio>
+        </el-radio-group>
         <br>
         <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
         <br>
@@ -17,49 +22,21 @@
 <script>
 import MarketLadder from './MarketLadder.vue'
 import TimeSales from './TimeSales.vue'
+import { createProducer } from '../lib/funcs.js'
 import xs from 'xstream'
 import _ from 'lodash'
 
 export default {
     data() {
         return {
+            currency: "btcusd",
+            radioControl: "btcusd",
             marketDepth: 7,
             orderBook: [],
             tradeData: [],
             connected: false,
-            geminiAddrBTC: 'wss://api.gemini.com/v1/marketdata/btcusd',
-            geminiAddrETH: 'wss://api.gemini.com/v1/marketdata/ethusd',
-            gemSocketBTC: '',
-            gemSocketETH: '',
-            producerBTC: {
-                start: (listener) => {
-                    this.gemSocketBTC = new WebSocket(this.geminiAddrBTC)
-                    this.gemSocketBTC.onopen = (event) => {
-                        this.connected = true
-                        this.$notify({
-                            title: "Connected",
-                            message: "Streaming data from Gemini Exchange",
-                            type: "success"
-                        })
-                        console.log(event)
-                    }
-                    this.gemSocketBTC.onmessage = (event) => {
-                        listener.next(JSON.parse(event.data))
-                    }
-                },
-                stop: () => {
-                    this.gemSocketBTC.close()
-                    this.gemSocketBTC.onclose = (event) => {
-                        this.connected = false
-                        this.$notify({
-                            title: "Disconnected",
-                            message: "Live data from Gemini Exchange stopped",
-                            type: "error"
-                        })
-                        console.log(event)
-                    }
-                }
-            },
+            autoReconnect: false,
+            gemSocket: '',
             controlListener: {
                 next: () => { return },
                 error: (err) => {
@@ -71,7 +48,7 @@ export default {
             },
             initListener: {
                 next: (value) => {
-                    this.orderBook = []
+                    // this.orderBook = []
                     value.forEach(v => {
                         var x = {
                             bidSize: "",
@@ -149,8 +126,44 @@ export default {
         }
     },
     computed: {
+        websocketAddr() {
+            return 'wss://api.gemini.com/v1/marketdata/' + this.currency
+        },
+        producer() {
+            return {
+                start: (listener) => {
+                    this.gemSocket = new WebSocket(this.websocketAddr)
+                    this.gemSocket.onopen = (event) => {
+                        this.orderBook = []    
+                        this.tradeData = []
+                        this.connected = true
+                        this.$notify({
+                            title: "Connected",
+                            message: "Streaming data from Gemini Exchange",
+                            type: "success"
+                        })
+                        console.log(event)
+                    }
+                    this.gemSocket.onmessage = (event) => {
+                        listener.next(JSON.parse(event.data))
+                    }
+                },
+                stop: () => {
+                    this.gemSocket.close()
+                    this.gemSocket.onclose = (event) => {
+                        this.connected = false
+                        this.$notify({
+                            title: "Disconnected",
+                            message: "Live data from Gemini Exchange stopped",
+                            type: "error"
+                        })
+                        console.log(event)
+                    }
+                }
+            }
+        },
         main$() {
-            return xs.createWithMemory(this.producerBTC)
+            return xs.createWithMemory(this.producer)
         },
         init$() {
             return xs.from(this.main$)
@@ -190,29 +203,29 @@ export default {
     },
     methods: {
         connect() {
-            this.connectBTC()
-        },
-        connectBTC() {
-            this.tradeData = []
             this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
             this.trade$.addListener(this.tradeListener)
         },
-        connectETH() {
-
-        },
         disconnect() {
-            this.disconnectBTC()
-        },
-        disconnectBTC() {
             this.main$.removeListener(this.controlListener)
             this.init$.removeListener(this.initListener)
             this.change$.removeListener(this.changeListener)
             this.trade$.removeListener(this.tradeListener)
         },
-        disconnectETH() {
-
+        switchSocket() {
+            this.currency = this.radioControl
+            this.autoReconnect = true
+            if (this.connected === true) {
+                this.disconnect()
+            }
+        }
+    },
+    beforeUpdate() {
+        if (this.autoReconnect === true && this.connected === false) {
+            this.autoReconnect = false
+            this.connect()
         }
     },
     components: {
