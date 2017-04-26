@@ -220,13 +220,6 @@ export default {
     },
     methods: {
         connect() {
-<<<<<<< HEAD
-=======
-            this.connectBTC()
-        },
-        connectBTC() {
-            this.orderBook = []
->>>>>>> 191a2fd7a8ac5d49753b08ddd0c906fe45d89515
             this.tradeData = []
             this.tradeHistory = []
             this.main$.addListener(this.controlListener)
