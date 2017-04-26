@@ -194,7 +194,9 @@ export default {
                 .filter(v => v.type === "update")
                 .map(v => {
                     if (v.events.length === 2) {
-                        _.reverse(_.cloneDeep(v.events))
+                        var x = _.cloneDeep(v)
+                        _.reverse(x.events)
+                        return x
                     }
                     return v
                 })
@@ -205,9 +207,7 @@ export default {
                 .drop(1)
                 .filter(v => v.type === "update")
                 .filter(v => v.events.length === 2)
-                .map(v => {
-                    return v.events[0]
-                })
+                .map(v => v.events[0])
         },
         ladderData() {
             var i = _.findLastIndex(this.orderBook, { "bidSize": "" })
