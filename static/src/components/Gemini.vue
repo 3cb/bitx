@@ -1,6 +1,9 @@
 <template>
     <div class="container">
-        <h4>This is Gemini Vue</h4>
+        <h4>Gemini Exchange</h4>
+        <br>
+        <span>last: {{ initPrice.last }}  </span><span>bid: {{ initPrice.bid }}  </span><span>ask: {{ initPrice.ask }}  </span><span>24-hour volume: {{ initPrice.volume.BTC }}</span>
+        <br>
         <el-button :plain="true" type="success" size="small" :disabled="connected" @click="connect">Connect</el-button>
         <el-button :plain="true" type="danger" size="small" :disabled="!connected" @click="disconnect">Disconnect</el-button>
         <el-radio-group v-model="radioControl" @change="switchSocket">
@@ -9,7 +12,7 @@
             <el-radio label="ethbtc">ETH/BTC</el-radio>
         </el-radio-group>
         <br>
-        <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
+            <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
         <br>
         <div class="ml">
             <market-ladder :ladderData="ladderData"></market-ladder>
@@ -22,6 +25,9 @@
 <script>
 import MarketLadder from './MarketLadder.vue'
 import TimeSales from './TimeSales.vue'
+import axios from 'axios'
+import getTime from 'date-fns/get_time'
+import subMonths from 'date-fns/sub_months'
 import xs from 'xstream'
 import _ from 'lodash'
 
@@ -30,6 +36,14 @@ export default {
         return {
             currency: "btcusd",
             radioControl: "btcusd",
+            initPrice: {
+                bid: "",
+                ask: "",
+                last: "",
+                volume: { BTC: "" }
+            },
+            tradeHistory: [],
+            historyMerged: false,
             marketDepth: 7,
             orderBook: [],
             tradeData: [],
@@ -47,7 +61,6 @@ export default {
             },
             initListener: {
                 next: (value) => {
-                    // this.orderBook = []
                     value.forEach(v => {
                         var x = {
                             bidSize: "",
@@ -111,6 +124,11 @@ export default {
             },
             tradeListener: {
                 next: (value) => {
+                    if (this.historyMerged === false) {
+                        let z = this.tradeData[this.tradeData.length-1].tid
+                        this.tradeData = _.concat(this.tradeData, _.dropWhile(this.tradeHistory, o => o.tid >= z))
+                        this.historyMerged = true
+                    }
                     var x = {
                         amount: value.amount,
                         price: value.price,
@@ -134,7 +152,7 @@ export default {
                     this.gemSocket = new WebSocket(this.websocketAddr)
                     this.gemSocket.onopen = (event) => {
                         this.orderBook = []    
-                        this.tradeData = []
+                        // this.tradeData = []
                         this.connected = true
                         this.$notify({
                             title: "Connected",
@@ -197,21 +215,27 @@ export default {
             return _.slice(this.orderBook, j-this.marketDepth, i+this.marketDepth+1)
         },
         resizedTradeData() {
-            return this.tradeData < 2*this.marketData ? this.tradeData: _.dropRight(this.tradeData, this.tradeData.length - 2*this.marketDepth)
+            return this.tradeData < 2*this.marketData ? this.tradeData : _.dropRight(this.tradeData, this.tradeData.length - 2*this.marketDepth)
         }
     },
     methods: {
         connect() {
+            this.tradeData = []
+            this.tradeHistory = []
             this.main$.addListener(this.controlListener)
             this.init$.addListener(this.initListener)
             this.change$.addListener(this.changeListener)
             this.trade$.addListener(this.tradeListener)
+            this.getHistory()
         },
         disconnect() {
             this.main$.removeListener(this.controlListener)
             this.init$.removeListener(this.initListener)
             this.change$.removeListener(this.changeListener)
             this.trade$.removeListener(this.tradeListener)
+            this.historyMerged = false
+            this.tradeData = []
+            this.tradeHistory = []
         },
         switchSocket() {
             this.currency = this.radioControl
@@ -219,7 +243,34 @@ export default {
             if (this.connected === true) {
                 this.disconnect()
             }
+        },
+        getHistory() {
+            axios.get("/api/getHistory/" + this.currency)
+            .then(response => {
+                console.log(response.data)
+                response.data.forEach(obj => {
+                    this.tradeHistory.push({amount: obj.amount, price: obj.price, tid: obj.tid})
+                })
+                if (!this.tradeData.length) {
+                    this.tradeData = this.tradeHistory
+                    this.historyMerged = true
+                }
+                console.log(this.tradeHistory)
+            })
+            .catch(error => {
+                console.log("Unable to retrieve historical data: " + error)
+            })
         }
+    },
+    beforeCreate() {
+        axios.get("/api/initializePrice")
+            .then(response => {
+                // console.log(response.data)
+                this.initPrice = response.data
+            })
+            .catch(error => {
+                console.log(error)
+            })
     },
     beforeUpdate() {
         if (this.autoReconnect === true && this.connected === false) {
