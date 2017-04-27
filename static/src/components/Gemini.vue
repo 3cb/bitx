@@ -247,7 +247,6 @@ export default {
         getHistory() {
             axios.get("/api/getHistory/" + this.currency)
             .then(response => {
-                console.log(response.data)
                 response.data.forEach(obj => {
                     this.tradeHistory.push({amount: obj.amount, price: obj.price, tid: obj.tid})
                 })
@@ -255,7 +254,6 @@ export default {
                     this.tradeData = this.tradeHistory
                     this.historyMerged = true
                 }
-                console.log(this.tradeHistory)
             })
             .catch(error => {
                 console.log("Unable to retrieve historical data: " + error)
