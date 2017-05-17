@@ -76,7 +76,6 @@ export default {
                     this.orderBook = _.orderBy(this.orderBook, [(o) => parseFloat(o.price)], ["desc"])
                 },
                 complete: () => {
-                    console.log('Order book initialization complete.')
                 }
             },
             changeListener: {
@@ -152,7 +151,6 @@ export default {
                     this.gemSocket.onopen = (event) => {
                         this.orderBook = []    
                         this.connected = true
-                        console.log(event)
                     }
                     this.gemSocket.onmessage = (event) => {
                         listener.next(JSON.parse(event.data))
@@ -162,7 +160,6 @@ export default {
                     this.gemSocket.close()
                     this.gemSocket.onclose = (event) => {
                         this.connected = false
-                        console.log(event)
                     }
                 }
             }
@@ -237,8 +234,6 @@ export default {
             this.change$.removeListener(this.changeListener)
             this.trade$.removeListener(this.tradeListener)
             this.historyMerged = false
-            // this.tradeData = []
-            // this.tradeHistory = []
         },
         switchSocket() {
             this.currency = this.radioControl
@@ -263,16 +258,6 @@ export default {
             })
         }
     },
-    // beforeCreate() {
-    //     axios.get("/api/initializePrice")
-    //         .then(response => {
-    //             // console.log(response.data)
-    //             this.initPrice = response.data
-    //         })
-    //         .catch(error => {
-    //             console.log(error)
-    //         })
-    // },
     beforeUpdate() {
         if (this.autoReconnect === true && this.connected === false) {
             this.autoReconnect = false

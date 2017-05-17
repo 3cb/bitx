@@ -16,7 +16,6 @@ func main() {
 	r := mux.NewRouter()
 
 	// list routes here
-	// r.Handle("/api/initializePrice", initializeHandler())
 	r.Handle("/api/getHistory/{currency}", historyHandler())
 
 	// use negroni to serve static files
@@ -26,18 +25,6 @@ func main() {
 	// start server
 	log.Fatal(http.ListenAndServe(":3000", n))
 }
-
-// func initializeHandler() http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-// 		resp, err := http.Get("https://api.gemini.com/v1/pubticker/btcusd")
-// 		data, err := ioutil.ReadAll(resp.Body)
-// 		defer resp.Body.Close()
-// 		if err != nil {
-// 			log.Printf("Error retrieving Price data: %v", err)
-// 		}
-// 		w.Write(data)
-// 	})
-// }
 
 func historyHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
