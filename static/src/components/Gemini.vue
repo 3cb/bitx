@@ -203,11 +203,26 @@ export default {
             return _.slice(this.orderBook, j-this.marketDepth, i+this.marketDepth+1)
         },
         resizedTradeData() {
-            return this.tradeData < 2*this.marketData ? this.tradeData : _.dropRight(this.tradeData, this.tradeData.length - 2*this.marketDepth)
+            var x = []
+            this.tradeData < 2*this.marketData ? x = this.tradeData : x = _.dropRight(this.tradeData, this.tradeData.length - 2*this.marketDepth)
+            for (var i = 0; i < x.length-2; i++) {
+                if (x[i].price === x[i+1].price) {
+                    x[i].icon = "arrows-h"
+                    x[i].color = "hsl(0, 0%, 14%)"
+                } else if (x[i].price > x[i+1].price) {
+                    x[i].icon = "long-arrow-up"
+                    x[i].color = "hsl(141, 71%, 48%)"
+                } else {
+                    x[i].icon = "long-arrow-down"
+                    x[i].color = "hsl(348, 100%, 61%)"
+                }
+            }
+            return x
         }
     },
     methods: {
         connect() {
+            this.orderBook = []
             this.tradeData = []
             this.tradeHistory = []
             this.main$.addListener(this.controlListener)
@@ -248,16 +263,16 @@ export default {
             })
         }
     },
-    beforeCreate() {
-        axios.get("/api/initializePrice")
-            .then(response => {
-                // console.log(response.data)
-                this.initPrice = response.data
-            })
-            .catch(error => {
-                console.log(error)
-            })
-    },
+    // beforeCreate() {
+    //     axios.get("/api/initializePrice")
+    //         .then(response => {
+    //             // console.log(response.data)
+    //             this.initPrice = response.data
+    //         })
+    //         .catch(error => {
+    //             console.log(error)
+    //         })
+    // },
     beforeUpdate() {
         if (this.autoReconnect === true && this.connected === false) {
             this.autoReconnect = false
@@ -272,26 +287,12 @@ export default {
 </script>
 
 <style>
-    .input {
-        margin: 0px 0px 0px 0px;
-        padding: 0px 0px 0px 0px;
-    }
-
-    .ml {
-        float: left;
-        width: 540px;
-    }
-
-    .ts {
-        float: right;
-    }
-
     line {
-        stroke: lightgrey;
+        stroke: hsl(0, 0%, 71%);
         stroke-width: 1px;
     }
 
     rect {
-        fill: lightgrey;
+        fill: hsl(0, 0%, 71%);
     }
 </style>

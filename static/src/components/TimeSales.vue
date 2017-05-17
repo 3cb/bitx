@@ -10,8 +10,8 @@
         <!--horizontal lines and data-->
         <g>
             <g v-for="(obj, index) in tradeData">
-                <text text-anchor="middle" v-bind="{ 'x':90, 'y':(index+1)*(420/tradeData.length)+20 }">{{ obj.price }}</text>
-                <text text-anchor="middle" v-bind="{ 'x':270, 'y':(index+1)*(420/tradeData.length)+20 }">{{ obj.amount }}</text>
+                <text text-anchor="middle" v-bind="{ 'x':90, 'y':(index+1)*(420/tradeData.length)+20, 'fill':obj.color }">{{ obj.price }}</text>
+                <text text-anchor="middle" v-bind="{ 'x':270, 'y':(index+1)*(420/tradeData.length)+20, 'fill':obj.color }">{{ obj.amount }}</text>
             </g>
             <line x1="0" x2="360" y1="450" y2="450"></line>
         </g>
@@ -31,15 +31,7 @@ export default {
 </script>
 
 <style>
-  /*.clearfix:before,
-  .clearfix:after {
-      display: table;
-      content: "";
-  }
-  .clearfix:after {
-      clear: both
-  }
-  .ts {
-      width: 370px;
-  }*/
+    svg {
+        background-color: hsl(0, 0%, 96%);
+    }
 </style>
