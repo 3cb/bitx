@@ -1,23 +1,26 @@
 <template>
-    <div class="container">
+    <div>
         <h4>Gemini Exchange</h4>
-        <br>
-        <span>last: {{ initPrice.last }}  </span><span>bid: {{ initPrice.bid }}  </span><span>ask: {{ initPrice.ask }}  </span><span>24-hour volume: {{ initPrice.volume.BTC }}</span>
-        <br>
-        <el-button :plain="true" type="success" size="small" :disabled="connected" @click="connect">Connect</el-button>
-        <el-button :plain="true" type="danger" size="small" :disabled="!connected" @click="disconnect">Disconnect</el-button>
-        <el-radio-group v-model="radioControl" @change="switchSocket">
-            <el-radio label="btcusd">BTC/USD</el-radio>
-            <el-radio label="ethusd">ETH/USD</el-radio>
-            <el-radio label="ethbtc">ETH/BTC</el-radio>
-        </el-radio-group>
-        <br>
-            <el-slider v-model="marketDepth" :min="5" :max="25"></el-slider>
-        <br>
-        <div class="ml">
-            <market-ladder :ladderData="ladderData"></market-ladder>
+        <div class="">
+            <a class="button is-primary" :disabled="connected" @click="connect">Connect</a>
+            <a class="button is-danger" :disabled="!connected" @click="disconnect">Disconnect</a>
+            <span class="select">
+                <select v-model="radioControl" @change="switchSocket">
+                    <option value="btcusd">BTC/USD</option>
+                    <option value="ethusd">ETH/USD</option>
+                    <option value="ethbtc">ETH/BTC</option>
+                </select>
+            </span>
         </div>
-        <time-sales :tradeData="resizedTradeData" class="ts"></time-sales>
+        <br>
+        <div class="columns">
+            <div class="column is-half is-marginless is-paddingless">
+                <market-ladder :ladderData="ladderData" class="is-pulled-right is-marginless is-paddingless"></market-ladder>
+            </div>
+            <div class="column is-half is-marginless is-paddingless">
+                <time-sales :tradeData="resizedTradeData" class="is-pulled-left is-marginless is-paddingless"></time-sales>
+            </div>
+        </div>
         <br>
     </div>
 </template>
@@ -36,12 +39,6 @@ export default {
         return {
             currency: "btcusd",
             radioControl: "btcusd",
-            initPrice: {
-                bid: "",
-                ask: "",
-                last: "",
-                volume: { BTC: "" }
-            },
             tradeHistory: [],
             historyMerged: false,
             marketDepth: 7,
@@ -65,6 +62,7 @@ export default {
                         var x = {
                             bidSize: "",
                             askSize: "",
+                            volume: "",
                             price: v.price
                         }
                         if (v.side === "bid") {
@@ -97,6 +95,7 @@ export default {
                             break
                         case false:
                             if (value[0].side === "bid") {
+                                
                                 this.orderBook = _.chain(this.orderBook)
                                                     .concat({
                                                         bidSize: value[0].remaining,
@@ -152,13 +151,7 @@ export default {
                     this.gemSocket = new WebSocket(this.websocketAddr)
                     this.gemSocket.onopen = (event) => {
                         this.orderBook = []    
-                        // this.tradeData = []
                         this.connected = true
-                        this.$notify({
-                            title: "Connected",
-                            message: "Streaming data from Gemini Exchange",
-                            type: "success"
-                        })
                         console.log(event)
                     }
                     this.gemSocket.onmessage = (event) => {
@@ -169,11 +162,6 @@ export default {
                     this.gemSocket.close()
                     this.gemSocket.onclose = (event) => {
                         this.connected = false
-                        this.$notify({
-                            title: "Disconnected",
-                            message: "Live data from Gemini Exchange stopped",
-                            type: "error"
-                        })
                         console.log(event)
                     }
                 }
@@ -234,8 +222,8 @@ export default {
             this.change$.removeListener(this.changeListener)
             this.trade$.removeListener(this.tradeListener)
             this.historyMerged = false
-            this.tradeData = []
-            this.tradeHistory = []
+            // this.tradeData = []
+            // this.tradeHistory = []
         },
         switchSocket() {
             this.currency = this.radioControl
@@ -284,12 +272,6 @@ export default {
 </script>
 
 <style>
-    .container {
-        margin: auto;
-        width: 910px;
-        align: center;
-    }
-
     .input {
         margin: 0px 0px 0px 0px;
         padding: 0px 0px 0px 0px;
@@ -302,5 +284,14 @@ export default {
 
     .ts {
         float: right;
+    }
+
+    line {
+        stroke: lightgrey;
+        stroke-width: 1px;
+    }
+
+    rect {
+        fill: lightgrey;
     }
 </style>

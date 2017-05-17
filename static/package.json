@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^0.16.1",
+    "bulma": "^0.4.1",
     "date-fns": "^1.28.3",
     "element-ui": "^1.2.8",
     "lodash": "^4.17.4",

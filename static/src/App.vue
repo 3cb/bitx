@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <gemini></gemini>
+    <!--<footer></footer>-->
   </div>
 </template>
 
