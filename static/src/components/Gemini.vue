@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Gemini Exchange</h4>
+        <h1 class="title">Gemini Exchange</h1>
         <div class="">
             <a class="button is-primary" :disabled="connected" @click="connect">Connect</a>
             <a class="button is-danger" :disabled="!connected" @click="disconnect">Disconnect</a>
