@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="title">Gemini Exchange</h1>
+        <h1 class="title"><a href="https://gemini.com/" target="_blank">Gemini Exchange</a></h1>
         <div class="">
             <a class="button is-primary" :disabled="connected" @click="connect">Connect</a>
             <a class="button is-danger" :disabled="!connected" @click="disconnect">Disconnect</a>
@@ -272,12 +272,12 @@ export default {
 </script>
 
 <style>
-    line {
-        stroke: hsl(0, 0%, 71%);
-        stroke-width: 1px;
-    }
+line {
+    stroke: hsl(0, 0%, 71%);
+    stroke-width: 1px;
+}
 
-    rect {
-        fill: hsl(0, 0%, 71%);
-    }
+rect {
+    fill: hsl(0, 0%, 71%);
+}
 </style>
